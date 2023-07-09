@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Generator
+from typing import Any, Generator, Set
 from discord.ext import commands
 
 
@@ -16,16 +16,16 @@ class HuskyCog(commands.Cog):
         self.emoji = emoji
 
     async def cog_load(self) -> None:
-        logging.DEBUG(
-            f"loaded cog {self.__class__.__name__} [{len(all_commands)} commands]"
+        logging.info(
+            f"loaded {self.__class__.__name__} [{len(self.all_cog_commands())} commands]"
         )
 
     async def cog_unload(self) -> None:
-        logging.DEBUG(
-            f"unloaded cog {self.__class__.__name__} [{len(all_commands)} commands]"
+        logging.info(
+            f"unloaded {self.__class__.__name__} [{len(self.all_cog_commands())} commands]"
         )
 
     def all_cog_commands(
         self,
-    ) -> Generator[commands.HybridCommand["HuskyCog", Any, Any], None, None]:
-        return self.walk_commands()
+    ) -> Set[commands.HybridCommand["HuskyCog", Any, Any]]:
+        return {c for c in self.walk_commands()}
