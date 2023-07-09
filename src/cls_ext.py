@@ -1,8 +1,6 @@
 import logging
-from typing import Any, Generator, Set
-import discord
+from typing import Any, Generator
 from discord.ext import commands
-from discord import app_commands
 
 
 class HuskyCog(commands.Cog):

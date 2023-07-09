@@ -14,7 +14,7 @@ import logging
 from glob import glob
 import asyncpg
 
-from database import HuskyPool
+from .database import HuskyPool
 
 
 class Husky(commands.Bot):
