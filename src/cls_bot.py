@@ -14,7 +14,7 @@ import logging
 from glob import glob
 import asyncpg
 
-from .database import HuskyPool
+from .database import HuskyPool, ClaimsWrapper
 
 
 class Husky(commands.Bot):
@@ -26,6 +26,8 @@ class Husky(commands.Bot):
             tree_cls=HuskyTree,
             intents=discord.Intents.all(),
         )
+
+        self.dbw_claims: ClaimsWrapper
 
     async def get_context(
         self,
@@ -55,6 +57,10 @@ class Husky(commands.Bot):
             dsn=f"postgresql://postgres:{input('PSQL Password')}@localhost:5432/husky"
         )
         self.pool = HuskyPool.from_apg_pool(pool)
+        await self.instantiate_database_wrappers()
+    
+    async def instantiate_database_wrappers(self) -> None:
+        self.dbw_claims = ClaimsWrapper(self.pool)
 
 
 class HuskyTree(CommandTree):

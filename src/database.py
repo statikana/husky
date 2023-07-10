@@ -101,7 +101,7 @@ class ClaimsWrapper(HuskyWrapper):
             ]  # get all arg names that have a value
             query = "SELECT * FROM claims"
             query, params_values = self._add_where_params(
-                query, params_names, params_values
+                query, params_names
             )  # add WHERE clause to query, format
             result = await conn.fetch(query, *params_values)
             return [Claim(**row) for row in result]
@@ -119,14 +119,53 @@ class ClaimsWrapper(HuskyWrapper):
                 claim_y,
                 dimension.value,
             )
+    
+    async def get_intersecting_claims(
+        self, claim_x: int, claim_y: int, dimension: Dimension
+    ) -> list[Claim]:
+        """
+        Returns a list of all claims which would be intersecting a new theoretical claim at (claim_x, claim_y) in dimension
+        """
+        async with self.pool.acquire() as conn:
+            result = await conn.fetchrow(
+                """
+                SELECT * FROM claims WHERE
+                SQRT(SQUARE(claim_x - $1) + SQUARE(claim_y - $2)) < $3
+                AND dimension = $4
+                """,
+                claim_x,
+                claim_y,
+                self.CLAIM_RADIUS,
+                dimension.value
+            )
+            # checks if the distance between the argument's claim point and 
+            # any other point in the same dimension is less than CLAIM_RADIUS
+            return [Claim(**row) for row in result]
+    
+    async def user_at_claim_limit(self, user_id: int, dimension: Dimension) -> bool:
+        """
+        Returns whether or not the user has reached CLAIMS_PER_USER_PER_DIMENSION in `dimension`
+        """
+        async with self.pool.acquire() as conn:
+            result = await conn.fetchval(
+                """
+                SELECT COUNT(*) FROM claims
+                WHERE user_id = $1 AND dimension = $2
+                """,
+                user_id,
+                dimension.value
+            )
+            return result[0] >= self.CLAIMS_PER_USER_PER_DIMENSION
 
     def _add_where_params(
-        self, query: str, param_names: list[str], param_values: list[Any]
+        self, query: str, param_names: list[str],
     ) -> tuple[str, list[Any]]:
         """
-        Adds parameter names and values automatically. The parameter names are gotten from the source function's signature.
+        Formats the query to include a WHERE clause and param names to value requirements
         """
-        query += " WHERE " + " AND ".join(
-            f"{param_name} = ${i+1}" for i, param_name in enumerate(param_names)
-        )
-        return query, param_values
+        if param_names:
+            query += " WHERE " + " AND ".join(
+                f"{param_name} = ${i+1}" for i, param_name in enumerate(param_names)
+            )
+            return query
+        return query
