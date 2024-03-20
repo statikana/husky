@@ -207,23 +207,24 @@ async def convert_time(ctx: HuskyContext, argument: str) -> datetime.time:
             continue
 
     unit = {
-        60: ["s", "sec", "second", "seconds"],
-        3600: ["m", "min", "minute", "minutes"],
-        86400: ["h", "hr", "hour", "hours"],
+        60: ["m", "min", "minute", "minutes"],
+        3600: ["h", "hr", "hour", "hours"],
     }
 
     # first, regex to see if it's actually in the right format
     regex = re.compile(
-        r"(\d+)(?:s|sec|second|seconds|m|min|minute|minutes|h|hr|hour|hours)",
+        r"(\d+)(?:m|min|minute|minutes|h|hr|hour|hours)",
         flags=re.IGNORECASE | re.MULTILINE,
     )
     matches = regex.findall(argument)
     if matches:
         sec = 0
         for m in matches:
-            b = m.group(0)
-            u = m.group(1)
-            sec += int(b) * unit[u]
+            for seconds, units in unit.items():
+                for u in units:
+                    if m.endswith(u):
+                        sec += seconds * float(m[: -len(u)])
+                        break
         r = datetime.datetime.now() + datetime.timedelta(seconds=sec)
         return r.time()
 

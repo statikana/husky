@@ -103,6 +103,7 @@ class Husky(commands.Bot):
 
         await self.reload_extensions()
         await self.connect_psql()
+        await self.start_tasks()
 
         logging.info(f"{self.__class__.__name__} ready")
 
@@ -149,6 +150,10 @@ class Husky(commands.Bot):
         await self.db_users.make_table()
         self.db_todo: TODO = TODO(self.pool)
         await self.db_todo.make_table()
+    
+    async def start_tasks(self) -> None:
+        await self.load_extension("src.watchdog")
+        
 
     # overrides for inherited methods
     def get_command(self, name: str) -> "HuskyCommand":

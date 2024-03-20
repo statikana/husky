@@ -41,6 +41,8 @@ class Secretary(HuskyCog):
         task: str
             The task to add to the todo list.
         """
+        if len(task) > 256:
+            raise ValueError("The task name is too long. Please keep the amount od characters under 256.")
         embed = ctx.embed(title="\N{Memo} Creating Task...", description=task)
         embed.add_field(name="Date", value="Not Set")
         embed.add_field(name="Time", value="Not Set")
@@ -56,11 +58,14 @@ class Secretary(HuskyCog):
         """Lists all of your tasks"""
         tasks = await self.bot.db_todo.get_user_tasks(ctx.author.id)
         if overdue_only:
+            print(tasks)
             tasks = [
                 f
                 for f in tasks
-                if f.date is not None and f.date < datetime.datetime.now().date()
+                if f.date is not None and f.date <= datetime.datetime.now().date() and
+                    f.time is not None and f.time < datetime.datetime.now().time()
             ]
+            print(tasks)
 
         if len(tasks) == 0:
             if overdue_only:
@@ -71,14 +76,13 @@ class Secretary(HuskyCog):
                 embed = ctx.embed(title="\N{White heavy check mark} You have no tasks")
             return await ctx.send(embed=embed)
 
-        embed = ctx.embed(title="\N{Memo} Your Tasks")
-        tasks = sorted(
-            tasks,
-            key=lambda t: datetime.datetime.combine(
-                t.date or datetime.datetime.now().date(),
-                t.time or datetime.time(0, 0, 0, 0),
-            ),
-        )
+        embed = ctx.embed(title="\N{Memo} Your Tasks", description="processing...")
+        tasks = sorted(tasks, key=lambda x: (x.date or datetime.datetime(1,1,1,0,0,0,0).date(), x.time or datetime.time(0, 0, 0, 0)))
+        for i, t in enumerate(tasks):
+            if t.date is None:
+                del tasks[i]
+                tasks.append(t)
+
         view = TaskPaginator(ctx, tasks, 5)
         message = await ctx.send(embed=embed, view=view)
         view.message = message

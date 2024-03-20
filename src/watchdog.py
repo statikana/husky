@@ -39,3 +39,7 @@ class Watch(HuskyCog):
                     await user.send(embed=embed)
                 except discord.Forbidden:
                     pass
+
+
+async def setup(bot: Husky):
+    await bot.add_cog(Watch(bot))
